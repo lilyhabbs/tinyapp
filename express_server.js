@@ -1,4 +1,5 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = 8080;
 
@@ -11,9 +12,11 @@ const urlDatabase = {
   '9sm5xK': 'http://www.google.com',
 };
 
-// body parsing middleware
+// Middleware
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
+// Routes
 app.get('/urls', (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render('urls_index', templateVars);
