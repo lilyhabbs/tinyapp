@@ -23,7 +23,14 @@
           <%= shortURL %>
         </a></p>
     </div>
-    <div class="card-footer text-muted"></div>
+    <div class="card-footer text-muted">
+      <h3>Edit</h3>
+      <form method="POST" action="/urls/<%= shortURL %>">
+        <label for="newURL">New URL: </label>
+        <input type="text" id="newURL" name="newURL">
+        <button type="submit">Submit</button>
+      </form>
+    </div>
   </div>
   <p><a href="#">Shorten a new URL</a></p>
   <!-- Bootstrap JS -->
