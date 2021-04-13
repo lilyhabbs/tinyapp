@@ -1,6 +1,8 @@
 const express = require('express');
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080;
+
+const generateRandomString = () => Math.random().toString(36).substr(2, 6);
 
 app.set('view engine', 'ejs');
 
@@ -9,6 +11,7 @@ const urlDatabase = {
   '9sm5xK': 'http://www.google.com',
 };
 
+// body parsing middleware
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/urls', (req, res) => {
