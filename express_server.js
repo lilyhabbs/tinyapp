@@ -3,9 +3,19 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = 8080;
 
+app.set('view engine', 'ejs');
+
 const generateRandomString = () => Math.random().toString(36).substr(2, 6);
 
-app.set('view engine', 'ejs');
+const checkEmail = (users, email) => {
+  for (const user in users) {
+    if (users[user].email === email) {
+      return true;
+    }
+  }
+
+  return false;
+};
 
 const urlDatabase = {
   'b2xVn2': 'http://www.lighthouselabs.ca',
@@ -18,7 +28,7 @@ const users = {
     email: 'user@example.com',
     password: 'purple-monkey-dinosaur',
   },
- 'user2RandomID': {
+  'user2RandomID': {
     id: 'user2RandomID',
     email: 'user2@example.com',
     password: 'dishwasher-funk',
@@ -99,14 +109,23 @@ app.post('/logout', (req, res) => {
 
 // Register new user
 app.post('/register', (req, res) => {
-  const userId = generateRandomString();
-  users[userId] = {
-    id: userId,
-    email: req.body.email,
-    password: req.body.password,
-  };
-  res.cookie('user_id', userId);
-  res.redirect(`/urls`);
+  const registered = checkEmail(users, req.body.email);
+
+  if (req.body.email === '' || req.body.password === '' || registered) {
+    res.sendStatus(400);
+  } else {
+    const userId = generateRandomString();
+    
+    users[userId] = {
+      id: userId,
+      email: req.body.email,
+      password: req.body.password,
+    };
+  
+    res.cookie('user_id', userId);
+    res.redirect(`/urls`);
+  }
+  console.log(users);
 });
 
 app.listen(PORT, () => {
