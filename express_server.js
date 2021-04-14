@@ -5,7 +5,12 @@ const PORT = 8080;
 
 app.set('view engine', 'ejs');
 
-const generateRandomString = () => Math.random().toString(36).substr(2, 6);
+// Middleware
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Functions
+const generateRandomString = (value) => Math.random().toString(36).substr(2, value);
 
 const checkEmail = (users, email) => {
   for (const user in users) {
@@ -35,37 +40,35 @@ const getUserId = (users, email) => {
   }
 };
 
+// Data
 const urlDatabase = {
   b6UTxQ: {
     longURL: 'https://www.tsn.ca',
-    userID: 'aJ48lW'
+    userID: 'id_aJ48',
   },
   i3BoGr: {
     longURL: 'https://www.google.ca',
-    userID: 'aJ48lW' },
+    userID: 'id_aJ48',
+  },
 };
 
 const users = {
-  'userRandomID': {
-    id: 'userRandomID',
+  'id_4we9': {
+    id: 'id_4wJ9',
     email: 'user@example.com',
     password: 'purple-monkey-dinosaur',
   },
-  'user2RandomID': {
+  'id_B52x': {
     id: 'user2RandomID',
     email: 'user2@example.com',
     password: 'dishwasher-funk',
   },
-  'aJ48lW': {
-    id: 'aJ48lW',
+  'id_aJ48': {
+    id: 'id_aJ48',
     email: 'user3@example.com',
     password: 'underwater-disneyland',
   },
 };
-
-// Middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
 // Templates
 app.get('/urls', (req, res) => {
@@ -116,15 +119,16 @@ app.get("/u/:shortURL", (req, res) => {
 app.post('/urls', (req, res) => {
   if (!req.cookies.user_id) {
     res.redirect(`/login`);
-    return;
+  } else {
+    const shortURL = generateRandomString(6);
+    urlDatabase[shortURL] = {
+      longURL: req.body.newURL,
+      userID: users[req.cookies.user_id].id,
+    };
+    console.log(urlDatabase);
+    res.redirect(`/urls/${shortURL}`);
   }
   
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = {
-    longURL: req.body.newURL,
-  };
-  urlDatabase[shortURL].longURL = req.body.newURL;
-  res.redirect(`/urls/${shortURL}`);
 });
 
 // Edit URL
@@ -141,46 +145,51 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   res.redirect('/urls');
 });
 
+// Register new user
+app.post('/register', (req, res) => {
+  const newEmail = req.body.email;
+  const newPassword = req.body.password;
+  
+  const isRegistered = checkEmail(users, req.body.email);
+  
+  if (newEmail === '' || newPassword === '' || isRegistered) {
+    res.sendStatus(400);
+  } else {
+    const userID = generateRandomString(4);
+    
+    users[userID] = {
+      id: `id_${userID}`,
+      email: newEmail,
+      password: newPassword,
+    };
+  
+    res.cookie('user_id', userID);
+    res.redirect(`/urls`);
+  }
+});
+
 // Login
 app.post('/login', (req, res) => {
-  const isRegistered = checkEmail(users, req.body.email);
-  const isVerified = verifyPassword(users, req.body.email, req.body.password);
-  const userId = getUserId(users, req.body.email);
+  const testEmail = req.body.email;
+  const testPassword = req.body.password;
+
+  const isRegistered = checkEmail(users, testEmail);
+  const isVerified = verifyPassword(users, testEmail, testPassword);
+  const userID = getUserId(users, testEmail);
 
   if (!isRegistered || !isVerified) {
     res.sendStatus(403);
-    return;
+  } else {
+    res.cookie('user_id', userID);
+    res.redirect(`/urls`);
   }
   
-  res.cookie('user_id', userId);
-  res.redirect(`/urls`);
 });
 
 // Logout
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
   res.redirect('/urls');
-});
-
-// Register new user
-app.post('/register', (req, res) => {
-  const isRegistered = checkEmail(users, req.body.email);
-
-  if (req.body.email === '' || req.body.password === '' || isRegistered) {
-    res.sendStatus(400);
-    return;
-  }
-
-  const userId = generateRandomString();
-  
-  users[userId] = {
-    id: userId,
-    email: req.body.email,
-    password: req.body.password,
-  };
-
-  res.cookie('user_id', userId);
-  res.redirect(`/urls`);
 });
 
 app.listen(PORT, () => {
