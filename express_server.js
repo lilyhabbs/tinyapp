@@ -116,16 +116,15 @@ app.get("/u/:shortURL", (req, res) => {
 app.post('/urls', (req, res) => {
   if (!req.cookies.user_id) {
     res.redirect(`/login`);
+    return;
   }
   
-  if (req.cookies.user_id) {
-    const shortURL = generateRandomString();
-    urlDatabase[shortURL] = {
-      longURL: req.body.newURL,
-    };
-    urlDatabase[shortURL].longURL = req.body.newURL;
-    res.redirect(`/urls/${shortURL}`);
-  }
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = {
+    longURL: req.body.newURL,
+  };
+  urlDatabase[shortURL].longURL = req.body.newURL;
+  res.redirect(`/urls/${shortURL}`);
 });
 
 // Edit URL
@@ -150,6 +149,7 @@ app.post('/login', (req, res) => {
 
   if (!isRegistered || !isVerified) {
     res.sendStatus(403);
+    return;
   }
   
   res.cookie('user_id', userId);
@@ -168,6 +168,7 @@ app.post('/register', (req, res) => {
 
   if (req.body.email === '' || req.body.password === '' || isRegistered) {
     res.sendStatus(400);
+    return;
   }
 
   const userId = generateRandomString();
