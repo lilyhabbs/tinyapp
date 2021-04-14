@@ -9,7 +9,6 @@
 </head>
 
 <body>
-
   <header>
     <%- include('partials/_header') %>
   </header>
@@ -18,14 +17,15 @@
     <div class="card-header">
       <% if (!user) { %>
         <div class="alert alert-warning" role="alert">
-          This short URL does not belong to you. Please <a href="/login">login</a> to view your short URLs.
+          You are not the owner of this short URL. Please <a href="/login">login</a> to view your short URLs.
         </div>
         <% } else if (!(shortURL in urls)) { %>
           <div class="alert alert-warning" role="alert">
-            This short URL does not belong to you. View your <a href="/urls">list of short URLs</a>.
+            You are not the owner of this short URL. View your <a href="/urls">list of short URLs</a>.
           </div>
           <% } %>
     </div>
+
     <div class="card-body">
       <h5 class="card-title">TinyURL for: <%= longURL %>
       </h5>
@@ -33,15 +33,19 @@
           <%= shortURL %>
         </a></p>
     </div>
+
     <div class="card-footer text-muted">
-      <h3>Edit</h3>
-      <form method="POST" action="/urls/<%= shortURL %>">
-        <label for="updatedURL">New URL: </label>
-        <input type="text" name="updatedURL">
-        <button type="submit" class="btn btn-primary">Submit</button>
-      </form>
+      <% if (user && shortURL in urls) { %>
+        <h3>Edit</h3>
+        <form method="POST" action="/urls/<%= shortURL %>">
+          <label for="updatedURL">New URL: </label>
+          <input type="text" name="updatedURL">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
     </div>
+    <% } %>
   </div>
+
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
     integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
