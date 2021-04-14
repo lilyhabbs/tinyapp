@@ -1,5 +1,6 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
 const app = express();
 const PORT = 8080;
 
@@ -24,7 +25,7 @@ const checkEmail = (users, email) => {
 
 const verifyPassword = (users, email, password) => {
   for (const user in users) {
-    if (users[user].email === email && users[user].password === password) {
+    if (users[user].email === email && bcrypt.compareSync(password, users[user].password)) {
       return true;
     }
   }
@@ -32,7 +33,7 @@ const verifyPassword = (users, email, password) => {
   return false;
 };
 
-const getUserId = (users, email) => {
+const getIdByEmail = (users, email) => {
   for (const user in users) {
     if (users[user].email === email) {
       return users[user].id;
@@ -186,11 +187,11 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 // Register new user
 app.post('/register', (req, res) => {
   const newEmail = req.body.email;
-  const newPassword = req.body.password;
+  const hashPassword = bcrypt.hashSync(req.body.password, 10);
   
   const isRegistered = checkEmail(users, req.body.email);
   
-  if (newEmail === '' || newPassword === '' || isRegistered) {
+  if (newEmail === '' || hashPassword === '' || isRegistered) {
     res.sendStatus(400);
   } else {
     const userID = generateRandomString();
@@ -198,8 +199,10 @@ app.post('/register', (req, res) => {
     users[userID] = {
       id: userID,
       email: newEmail,
-      password: newPassword,
+      password: hashPassword,
     };
+
+    console.log('Users: ', users);
   
     res.cookie('user_id', userID);
     res.redirect(`/urls`);
@@ -213,7 +216,7 @@ app.post('/login', (req, res) => {
 
   const isRegistered = checkEmail(users, testEmail);
   const isVerified = verifyPassword(users, testEmail, testPassword);
-  const userID = getUserId(users, testEmail);
+  const userID = getIdByEmail(users, testEmail);
 
   if (!isRegistered || !isVerified) {
     res.sendStatus(403);
