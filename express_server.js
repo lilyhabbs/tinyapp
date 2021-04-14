@@ -114,12 +114,18 @@ app.get("/u/:shortURL", (req, res) => {
 
 // Create new URL
 app.post('/urls', (req, res) => {
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = {
-    longURL: req.body.newURL,
-  };
-  // urlDatabase[shortURL].longURL = req.body.newURL;
-  res.redirect(`/urls/${shortURL}`);
+  if (!req.cookies.user_id) {
+    res.redirect(`/login`);
+  }
+  
+  if (req.cookies.user_id) {
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = {
+      longURL: req.body.newURL,
+    };
+    urlDatabase[shortURL].longURL = req.body.newURL;
+    res.redirect(`/urls/${shortURL}`);
+  }
 });
 
 // Edit URL
