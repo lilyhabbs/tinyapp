@@ -1,6 +1,7 @@
 const express = require('express');
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
+
 const app = express();
 const PORT = 8080;
 
@@ -8,7 +9,13 @@ app.set('view engine', 'ejs');
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1'],
+
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
 
 // Functions
 const generateRandomString = () => Math.random().toString(36).substr(2, 6);
@@ -53,44 +60,18 @@ const urlsForUser = (urlDatabase, id) => {
   return userUrls;
 };
 
-// Data
-const urlDatabase = {
-  b6UTxQ: {
-    longURL: 'https://www.tsn.ca',
-    userID: 'aJ48lW',
-  },
-  i3BoGr: {
-    longURL: 'https://www.google.ca',
-    userID: 'aJ48lW',
-  },
-};
-
-const users = {
-  '4wJ994': {
-    id: '4wJ994',
-    email: 'user@example.com',
-    password: 'purple-monkey-dinosaur',
-  },
-  'B5de2J': {
-    id: 'B5de2J',
-    email: 'user2@example.com',
-    password: 'dishwasher-funk',
-  },
-  'aJ48lW': {
-    id: 'aJ48lW',
-    email: 'user3@example.com',
-    password: 'underwater-disneyland',
-  },
-};
+// Databases
+const urlDatabase = {};
+const users = {};
 
 // Templates
 app.get('/urls', (req, res) => {
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     res.redirect(`/login`);
   } else {
     const templateVars = {
-      urls: urlsForUser(urlDatabase, req.cookies.user_id),
-      user: users[req.cookies.user_id],
+      urls: urlsForUser(urlDatabase, req.session.user_id),
+      user: users[req.session.user_id],
     };
 
     res.render('urls_index', templateVars);
@@ -98,11 +79,11 @@ app.get('/urls', (req, res) => {
 });
 
 app.get('/urls/new', (req, res) => {
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     res.redirect(`/login`);
   } else {
     const templateVars = {
-      user: users[req.cookies.user_id],
+      user: users[req.session.user_id],
     };
 
     res.render('urls_new', templateVars);
@@ -113,8 +94,8 @@ app.get('/urls/:shortURL', (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    user: users[req.cookies.user_id],
-    urls: urlsForUser(urlDatabase, req.cookies.user_id),
+    user: users[req.session.user_id],
+    urls: urlsForUser(urlDatabase, req.session.user_id),
   };
   
   res.render('urls_show', templateVars);
@@ -122,7 +103,7 @@ app.get('/urls/:shortURL', (req, res) => {
 
 app.get('/register', (req, res) => {
   const templateVars = {
-    user: users[req.cookies.user_id],
+    user: users[req.session.user_id],
   };
 
   res.render('urls_register', templateVars);
@@ -130,7 +111,7 @@ app.get('/register', (req, res) => {
 
 app.get('/login', (req, res) => {
   const templateVars = {
-    user: users[req.cookies.user_id],
+    user: users[req.session.user_id],
   };
 
   res.render('urls_login', templateVars);
@@ -149,7 +130,7 @@ app.post('/urls', (req, res) => {
 
   urlDatabase[shortURL] = {
     longURL: req.body.newURL,
-    userID: users[req.cookies.user_id].id,
+    userID: users[req.session.user_id].id,
   };
 
   res.redirect(`/urls/${shortURL}`);
@@ -158,12 +139,12 @@ app.post('/urls', (req, res) => {
 // Edit URL
 app.post('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
-  const userUrls = urlsForUser(urlDatabase, req.cookies.user_id);
+  const userUrls = urlsForUser(urlDatabase, req.session.user_id);
 
   if (shortURL in userUrls) {
     urlDatabase[req.params.shortURL] = {
       longURL: req.body.updatedURL,
-      userID: req.cookies.user_id,
+      userID: req.session.user_id,
     };
     res.redirect(`/urls/`);
   } else {
@@ -174,7 +155,7 @@ app.post('/urls/:shortURL', (req, res) => {
 // Delete URL
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
-  const userUrls = urlsForUser(urlDatabase, req.cookies.user_id);
+  const userUrls = urlsForUser(urlDatabase, req.session.user_id);
 
   if (shortURL in userUrls) {
     delete urlDatabase[req.params.shortURL];
@@ -194,17 +175,15 @@ app.post('/register', (req, res) => {
   if (newEmail === '' || hashPassword === '' || isRegistered) {
     res.sendStatus(400);
   } else {
-    const userID = generateRandomString();
+    const newUserID = generateRandomString();
     
-    users[userID] = {
-      id: userID,
+    users[newUserID] = {
+      id: newUserID,
       email: newEmail,
       password: hashPassword,
     };
-
-    console.log('Users: ', users);
   
-    res.cookie('user_id', userID);
+    req.session.user_id = newUserID;
     res.redirect(`/urls`);
   }
 });
@@ -221,14 +200,14 @@ app.post('/login', (req, res) => {
   if (!isRegistered || !isVerified) {
     res.sendStatus(403);
   } else {
-    res.cookie('user_id', userID);
+    req.session.user_id = userID;
     res.redirect(`/urls`);
   }
 });
 
 // Logout
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect('/urls');
 });
 
