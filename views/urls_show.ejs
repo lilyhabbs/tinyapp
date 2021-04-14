@@ -15,7 +15,17 @@
   </header>
 
   <div class="card text-center">
-    <div class="card-header"></div>
+    <div class="card-header">
+      <% if (!user) { %>
+        <div class="alert alert-warning" role="alert">
+          This short URL does not belong to you. Please <a href="/login">login</a> to view your short URLs.
+        </div>
+        <% } else if (!(shortURL in urls)) { %>
+          <div class="alert alert-warning" role="alert">
+            This short URL does not belong to you. View your <a href="/urls">list of short URLs</a>.
+          </div>
+          <% } %>
+    </div>
     <div class="card-body">
       <h5 class="card-title">TinyURL for: <%= longURL %>
       </h5>
