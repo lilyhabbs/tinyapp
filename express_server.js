@@ -113,6 +113,7 @@ app.get('/urls/:shortURL', (req, res) => {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
     user: users[req.cookies.user_id],
+    urls: urlsForUser(urlDatabase, req.cookies.user_id),
   };
   
   res.render('urls_show', templateVars);
