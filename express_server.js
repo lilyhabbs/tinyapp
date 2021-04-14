@@ -56,27 +56,27 @@ const urlsForUser = (urlDatabase, id) => {
 const urlDatabase = {
   b6UTxQ: {
     longURL: 'https://www.tsn.ca',
-    userID: 'id_aJ48lW',
+    userID: 'aJ48lW',
   },
   i3BoGr: {
     longURL: 'https://www.google.ca',
-    userID: 'id_aJ48lW',
+    userID: 'aJ48lW',
   },
 };
 
 const users = {
-  'id_4wJ994': {
-    id: 'id_4wJ994',
+  '4wJ994': {
+    id: '4wJ994',
     email: 'user@example.com',
     password: 'purple-monkey-dinosaur',
   },
-  'id_B5de2J': {
-    id: 'id_B5de2J',
+  'B5de2J': {
+    id: 'B5de2J',
     email: 'user2@example.com',
     password: 'dishwasher-funk',
   },
-  'id_aJ48lW': {
-    id: 'id_aJ48lW',
+  'aJ48lW': {
+    id: 'aJ48lW',
     email: 'user3@example.com',
     password: 'underwater-disneyland',
   },
@@ -156,18 +156,31 @@ app.post('/urls', (req, res) => {
 
 // Edit URL
 app.post('/urls/:shortURL', (req, res) => {
-  urlDatabase[req.params.shortURL] = {
-    longURL: req.body.updatedURL,
-  };
+  const shortURL = req.params.shortURL;
+  const userUrls = urlsForUser(urlDatabase, req.cookies.user_id);
 
-  res.redirect(`/urls/`);
+  if (shortURL in userUrls) {
+    urlDatabase[req.params.shortURL] = {
+      longURL: req.body.updatedURL,
+      userID: req.cookies.user_id,
+    };
+    res.redirect(`/urls/`);
+  } else {
+    res.send('You are not authorized to edit this URL.\n');
+  }
 });
 
 // Delete URL
 app.post('/urls/:shortURL/delete', (req, res) => {
-  delete urlDatabase[req.params.shortURL];
+  const shortURL = req.params.shortURL;
+  const userUrls = urlsForUser(urlDatabase, req.cookies.user_id);
 
-  res.redirect('/urls');
+  if (shortURL in userUrls) {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect('/urls');
+  } else {
+    res.send('You are not authorized to delete this URL.\n');
+  }
 });
 
 // Register new user
@@ -183,7 +196,7 @@ app.post('/register', (req, res) => {
     const userID = generateRandomString();
     
     users[userID] = {
-      id: `id_${userID}`,
+      id: userID,
       email: newEmail,
       password: newPassword,
     };
