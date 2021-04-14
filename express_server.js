@@ -17,6 +17,24 @@ const checkEmail = (users, email) => {
   return false;
 };
 
+const verifyPassword = (users, email, password) => {
+  for (const user in users) {
+    if (users[user].email === email && users[user].password === password) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const getUserId = (users, email) => {
+  for (const user in users) {
+    if (users[user].email === email) {
+      return users[user].id;
+    }
+  }
+};
+
 const urlDatabase = {
   'b2xVn2': 'http://www.lighthouselabs.ca',
   '9sm5xK': 'http://www.google.com',
@@ -105,7 +123,16 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 
 // Login
 app.post('/login', (req, res) => {
-  res.redirect('/urls');
+  const isRegistered = checkEmail(users, req.body.email);
+  const isVerified = verifyPassword(users, req.body.email, req.body.password);
+  const userId = getUserId(users, req.body.email);
+
+  if (!isRegistered || !isVerified) {
+    res.sendStatus(403);
+  }
+  
+  res.cookie('user_id', userId);
+  res.redirect(`/urls`);
 });
 
 // Logout
@@ -116,23 +143,22 @@ app.post('/logout', (req, res) => {
 
 // Register new user
 app.post('/register', (req, res) => {
-  const registered = checkEmail(users, req.body.email);
+  const isRegistered = checkEmail(users, req.body.email);
 
-  if (req.body.email === '' || req.body.password === '' || registered) {
+  if (req.body.email === '' || req.body.password === '' || isRegistered) {
     res.sendStatus(400);
-  } else {
-    const userId = generateRandomString();
-    
-    users[userId] = {
-      id: userId,
-      email: req.body.email,
-      password: req.body.password,
-    };
-  
-    res.cookie('user_id', userId);
-    res.redirect(`/urls`);
   }
-  console.log(users);
+
+  const userId = generateRandomString();
+  
+  users[userId] = {
+    id: userId,
+    email: req.body.email,
+    password: req.body.password,
+  };
+
+  res.cookie('user_id', userId);
+  res.redirect(`/urls`);
 });
 
 app.listen(PORT, () => {
