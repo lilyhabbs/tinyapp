@@ -16,12 +16,16 @@ const getUrlsForUser = (id, urlDatabase) => {
       userUrls[shortURL] = urlDatabase[shortURL];
     }
   }
-
   return userUrls;
+};
+
+const verifyLongUrl = (url) => {
+  return url.startsWith('http');
 };
 
 module.exports = {
   generateRandomString,
   getUserByEmail,
-  getUrlsForUser
+  getUrlsForUser,
+  verifyLongUrl
 };

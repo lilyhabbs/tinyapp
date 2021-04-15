@@ -3,7 +3,7 @@ const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 const app = express();
 const PORT = 8080;
-const { generateRandomString, getUserByEmail, getUrlsForUser } = require('./helpers');
+const { generateRandomString, getUserByEmail, getUrlsForUser, verifyLongUrl } = require('./helpers');
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ // Express body parser
@@ -25,7 +25,7 @@ app.get('/urls', (req, res) => {
     res.redirect(`/login`);
   } else {
     const templateVars = {
-      urls: getUrlsForUser(urlDatabase, req.session.user_id),
+      urls: getUrlsForUser(req.session.user_id, urlDatabase),
       user: users[req.session.user_id],
     };
 
@@ -81,29 +81,42 @@ app.get("/u/:shortURL", (req, res) => {
 
 // Create new URL
 app.post('/urls', (req, res) => {
-  const shortURL = generateRandomString();
+  const longURL = req.body.newURL;
+  const validURL = verifyLongUrl(longURL);
+  
+  if (!validURL) {
+    res.send('Please enter a valid URL starting with http:// or https://')
+  } else {
+    const shortURL = generateRandomString();
 
-  urlDatabase[shortURL] = {
-    longURL: req.body.newURL,
-    userID: users[req.session.user_id].id,
-  };
-
-  res.redirect(`/urls/${shortURL}`);
+    urlDatabase[shortURL] = {
+      longURL: req.body.newURL,
+      userID: users[req.session.user_id].id,
+    };
+    
+    res.redirect(`/urls/${shortURL}`);
+  }
 });
 
 // Edit URL
 app.post('/urls/:shortURL', (req, res) => {
-  const shortURL = req.params.shortURL;
-  const userUrls = getUrlsForUser(req.session.user_id, urlDatabase);
-
-  if (shortURL in userUrls) {
-    urlDatabase[req.params.shortURL] = {
-      longURL: req.body.updatedURL,
-      userID: req.session.user_id,
-    };
-    res.redirect(`/urls/`);
+  const validURL = verifyLongUrl(req.body.updatedURL);
+  
+  if (!validURL) {
+    res.send('Please enter a valid URL staring with http:// or https://.')
   } else {
-    res.send('You are not authorized to edit this URL.\n');
+    const shortURL = req.params.shortURL;
+    const userUrls = getUrlsForUser(req.session.user_id, urlDatabase);
+
+    if (shortURL in userUrls) {
+      urlDatabase[req.params.shortURL] = {
+        longURL: req.body.updatedURL,
+        userID: req.session.user_id,
+      };
+      res.redirect(`/urls/`);
+    } else {
+      res.send('You are not authorized to edit this URL.\n');
+    }
   }
 });
 
