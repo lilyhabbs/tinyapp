@@ -15,15 +15,6 @@
 
   <div class="card text-center">
     <div class="card-header">
-      <% if (!user) { %>
-        <div class="alert alert-warning" role="alert">
-          You are not the owner of this short URL. Please <a href="/login">login</a> to view your short URLs.
-        </div>
-        <% } else if (!(shortURL in urls)) { %>
-          <div class="alert alert-warning" role="alert">
-            You are not the owner of this short URL. View your <a href="/urls">list of short URLs</a>.
-          </div>
-          <% } %>
     </div>
 
     <div class="card-body">
@@ -35,18 +26,20 @@
     </div>
 
     <div class="card-footer text-muted">
-      <% if (user && shortURL in urls) { %>
+      <% if (shortURL in urls) { %>
         <h3>Edit</h3>
         <form method="POST" action="/urls/<%= shortURL %>">
           <label for="updatedURL">New URL: </label>
           <input type="text" name="updatedURL">
-          <button type="submit" class="btn btn-primary">Submit</button>
+          <button type="submit" class="btn btn-primary">Update</button>
         </form>
-        <small class="form-text text-muted" style="font-style: italic">
-          NOTE: The URL must start with http or https.
+        <small class="form-text text-muted">
+          NOTE: The URL must start with http or https
         </small>
     </div>
-    <% } %>
+    <% } else { %>
+      <div class="alert alert-warning" role="alert">You must be the owner of this short URL to make changes.</div>
+      <% } %>
   </div>
 
   <!-- Bootstrap JS -->

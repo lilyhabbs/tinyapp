@@ -32,9 +32,7 @@
         <% for(let url in urls) { %>
           <tr>
             <td>
-              <a href="<%= urls[url].longURL %>" target="blank">
-                <%= url %>
-              </a>
+              <%= url %>
             </td>
             <td>
               <%= urls[url].longURL %>
@@ -51,6 +49,7 @@
           <% } %>
       </tbody>
     </table>
+    <div><a href="/urls/new">Create a new short URL</a></div>
   </main>
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"

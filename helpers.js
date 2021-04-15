@@ -9,14 +9,14 @@ const getUserByEmail = function(email, users) {
 };
 
 const getUrlsForUser = (id, urlDatabase) => {
-  const userUrls = {};
+  const urlsForUser = {};
 
   for (const shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID === id) {
-      userUrls[shortURL] = urlDatabase[shortURL];
+    if (urlDatabase[shortURL].userId === id) {
+      urlsForUser[shortURL] = urlDatabase[shortURL];
     }
   }
-  return userUrls;
+  return urlsForUser;
 };
 
 const verifyLongUrl = (url) => {

@@ -18,13 +18,14 @@
 
     <main style="margin: 1em;">
       <h3>Create TinyURL</h3>
-      <small class="form-text text-muted" style="font-style: italic">
+      <small class="form-text text-muted">
         NOTE: The URL must start with http or https.
       </small>
       <form class="form-inline" action="/urls" method="POST">
         <div class="form-group mb-2">
-          <label for="newURL">Enter a URL:</label>
-          <input class="form-control" type="text" name="newURL" placeholder="http://" style="width: 300px; margin: 1em">
+          <label for="longURL">Enter a URL:</label>
+          <input class="form-control" type="text" name="longURL" placeholder="http://"
+            style="width: 300px; margin: 1em">
           <button type="submit" class="btn btn-primary">Submit</button>
         </div>
       </form>
