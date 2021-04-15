@@ -1,64 +1,19 @@
 const express = require('express');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
-
 const app = express();
 const PORT = 8080;
+const { generateRandomString, getUserByEmail, getUrlsForUser } = require('./helpers');
 
 app.set('view engine', 'ejs');
-
-// Middleware
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ // Express body parser
+  extended: true,
+}));
 app.use(cookieSession({
   name: 'session',
   keys: ['key1'],
-
-  // Cookie Options
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  maxAge: 24 * 60 * 60 * 1000 // 24 hour expiry (1000ms * 60s * 60m * 24h)
 }));
-
-// Functions
-const generateRandomString = () => Math.random().toString(36).substr(2, 6);
-
-const checkEmail = (users, email) => {
-  for (const user in users) {
-    if (users[user].email === email) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-const verifyPassword = (users, email, password) => {
-  for (const user in users) {
-    if (users[user].email === email && bcrypt.compareSync(password, users[user].password)) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-const getIdByEmail = (users, email) => {
-  for (const user in users) {
-    if (users[user].email === email) {
-      return users[user].id;
-    }
-  }
-};
-
-const urlsForUser = (urlDatabase, id) => {
-  const userUrls = {};
-
-  for (const shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID === id) {
-      userUrls[shortURL] = urlDatabase[shortURL];
-    }
-  }
-
-  return userUrls;
-};
 
 // Databases
 const urlDatabase = {};
@@ -70,7 +25,7 @@ app.get('/urls', (req, res) => {
     res.redirect(`/login`);
   } else {
     const templateVars = {
-      urls: urlsForUser(urlDatabase, req.session.user_id),
+      urls: getUrlsForUser(urlDatabase, req.session.user_id),
       user: users[req.session.user_id],
     };
 
@@ -95,7 +50,7 @@ app.get('/urls/:shortURL', (req, res) => {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
     user: users[req.session.user_id],
-    urls: urlsForUser(urlDatabase, req.session.user_id),
+    urls: getUrlsForUser(req.session.user_id, urlDatabase),
   };
   
   res.render('urls_show', templateVars);
@@ -139,7 +94,7 @@ app.post('/urls', (req, res) => {
 // Edit URL
 app.post('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
-  const userUrls = urlsForUser(urlDatabase, req.session.user_id);
+  const userUrls = getUrlsForUser(req.session.user_id, urlDatabase);
 
   if (shortURL in userUrls) {
     urlDatabase[req.params.shortURL] = {
@@ -155,7 +110,7 @@ app.post('/urls/:shortURL', (req, res) => {
 // Delete URL
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
-  const userUrls = urlsForUser(urlDatabase, req.session.user_id);
+  const userUrls = getUrlsForUser(req.session.user_id, urlDatabase);
 
   if (shortURL in userUrls) {
     delete urlDatabase[req.params.shortURL];
@@ -170,10 +125,14 @@ app.post('/register', (req, res) => {
   const newEmail = req.body.email;
   const hashPassword = bcrypt.hashSync(req.body.password, 10);
   
-  const isRegistered = checkEmail(users, req.body.email);
+  const user = getUserByEmail(newEmail, users);
   
-  if (newEmail === '' || hashPassword === '' || isRegistered) {
-    res.sendStatus(400);
+  if (newEmail === '' || hashPassword === '') {
+    res.status(400);
+    res.send('Please ensure all fields are filled in.\n');
+  } else if (user) {
+    res.status(400);
+    res.send('There is already an account associated with this email address. Please try again.\n');
   } else {
     const newUserID = generateRandomString();
     
@@ -184,7 +143,7 @@ app.post('/register', (req, res) => {
     };
   
     req.session.user_id = newUserID;
-    res.redirect(`/urls`);
+    res.redirect('/urls');
   }
 });
 
@@ -193,15 +152,14 @@ app.post('/login', (req, res) => {
   const testEmail = req.body.email;
   const testPassword = req.body.password;
 
-  const isRegistered = checkEmail(users, testEmail);
-  const isVerified = verifyPassword(users, testEmail, testPassword);
-  const userID = getIdByEmail(users, testEmail);
-
-  if (!isRegistered || !isVerified) {
-    res.sendStatus(403);
+  const user = getUserByEmail(testEmail, users);  
+  
+  if (!user || !bcrypt.compareSync(testPassword, user.password)) {
+    res.status(403);
+    res.send('Your email and/or password do not match our records. Please try again.\n');
   } else {
-    req.session.user_id = userID;
-    res.redirect(`/urls`);
+    req.session.user_id = user.id;
+    res.redirect('/urls');
   }
 });
 
