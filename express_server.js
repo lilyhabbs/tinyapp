@@ -29,19 +29,19 @@ app.get('/', (req, res) => {
 
 app.get('/urls', (req, res) => {
   if (!req.session.userId) {
-    return res.status(403).send('You must be logged in to view this page.\n');
+    return res.status(403).send('You are not logged in.\n');
   }
 
   const templateVars = {
-    urls: getUrlsForUser(req.session.userId, urlDatabase),
     user: users[req.session.userId],
+    urls: getUrlsForUser(req.session.userId, urlDatabase),
   };
   res.render('urls_index', templateVars);
 });
 
 app.get('/urls/new', (req, res) => {
   if (!req.session.userId) {
-    return res.redirect(`/login`);
+    return res.redirect('/login');
   }
 
   const templateVars = {
@@ -101,11 +101,11 @@ app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
 
   if (!req.session.userId) {
-    return res.send('You must be logged in to create a new URL.\n');
+    return res.status(403).send('You must be logged in to create a new URL.\n');
   }
   
   if (!isValidURL) {
-    return res.send('Please enter a valid URL starting with http:// or https://');
+    return res.status(400).send('Please enter a valid URL starting with http:// or https://');
   }
 
   urlDatabase[shortURL] = {
@@ -121,11 +121,11 @@ app.post('/urls/:shortURL', (req, res) => {
   const userUrls = getUrlsForUser(req.session.userId, urlDatabase);
   
   if (!validURL) {
-    return res.send('Please enter a valid URL staring with http:// or https://\n');
+    return res.status(400).send('Please enter a valid URL starting with http:// or https://\n');
   }
 
   if (!(req.params.shortURL in userUrls)) {
-    return res.send('Sorry, you are not authorized to edit this URL.\n');
+    return res.status(403).send('Sorry, you are not authorized to edit this URL.\n');
   }
 
   urlDatabase[req.params.shortURL] = {
@@ -140,7 +140,7 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   const userUrls = getUrlsForUser(req.session.userId, urlDatabase);
 
   if (!(req.params.shortURL in userUrls)) {
-    return res.send('Sorry, you are not authorized to delete this URL.\n');
+    return res.status(403).send('Sorry, you are not authorized to delete this URL.\n');
   }
 
   delete urlDatabase[req.params.shortURL];
@@ -185,7 +185,7 @@ app.post('/login', (req, res) => {
 // Logout
 app.post('/logout', (req, res) => {
   req.session = null;
-  res.redirect('/login');
+  res.redirect('/urls');
 });
 
 app.listen(PORT, () => {
